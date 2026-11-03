@@ -1,0 +1,10 @@
+
+{% if status == 'open' %}
+    <span class="badge text-bg-primary"><i class="bi bi-circle"></i> Open</span>
+{% elif status == 'in_progress' %}
+    <span class="badge text-bg-warning"><i class="bi bi-hourglass-split"></i> In progress</span>
+{% elif status == 'resolved' %}
+    <span class="badge text-bg-success"><i class="bi bi-check-circle"></i> Resolved</span>
+{% elif status == 'cancelled' %}
+    <span class="badge text-bg-secondary"><i class="bi bi-x-circle"></i> Cancelled</span>
+{% endif %}
