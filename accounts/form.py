@@ -113,3 +113,45 @@ class SignUpForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+class EmailLoginForm(forms.Form):
+    email=forms.EmailField(label='Email',widget=forms.EmailInput(
+        attrs={'autofocus':True,'autocomplete':'email'}))
+    password=forms.CharField(label='Password',strip=False,widget=forms.PasswordInput(
+        attrs={'autocomplete':'current-password'}))
+
+    error_messages={
+        'invalid_login':'Please enter a correct email and password.',
+    }
+
+    def __init__(self,request=None,*args,**kwargs):
+        self.request=request
+        self.user_cache=None
+        super().__init__(*args,**kwargs)
+        style_form(self)
+
+    def clean_email(self):
+        return normalize_email(self.cleaned_data['email'])
+
+    def clean(self):
+        cleaned=super().clean()
+        email=cleaned.get('email')
+        password=cleaned.get('password')
+        if email and password:
+            self.user_cache=authenticate(self.request,email=email,password=password)
+            if self.user_cache is None:
+                raise ValidationError(self.error_messages['invalid_login'],code='invalid_login')
+        return cleaned
+
+    def get_user(self):
+        return self.user_cache
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model=User
+        fields=['first_name','last_name','bio','profile_image']
+        widgets={'bio':forms.Textarea(attrs={'rows':4})}
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        style_form(self)
