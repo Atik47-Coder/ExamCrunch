@@ -156,36 +156,3 @@ class ProfileForm(forms.ModelForm):
         super().__init__(*args,**kwargs)
         style_form(self)
 
-class StudentIdentityAdminMixin:
-    def clean(self):
-        cleaned=super().clean()
-        is_staff=cleaned.get('is_staff',self.instance.is_staff)
-        is_superuser=cleaned.get('is_superuser',self.instance.is_superuser)
-        is_student=not (is_staff or is_superuser)
-
-        identity_touched=(not self.instance.pk) or bool({'email','student_id'} & set(self.changed_data))
-        if is_student and identity_touched:
-            try:
-                email,student_id=validate_student_identity(
-                    cleaned.get('email',self.instance.email),
-                    cleaned.get('student_id',self.instance.student_id))
-            except ValidationError as error:
-                for field,messages in error.error_dict.items():
-                    self.add_error(field if field in self.fields else None,messages)
-            else:
-                if 'email' in self.fields:
-                    cleaned['email']=email
-                if 'student_id' in self.fields:
-                    cleaned['student_id']=student_id
-        else:
-            if cleaned.get('email'):
-                cleaned['email']=normalize_email(cleaned['email'])
-            if 'student_id' in self.fields:
-                cleaned['student_id']=normalize_student_id(cleaned.get('student_id')) or None
-        return cleaned
-
-class StudentAdminCreationForm(StudentIdentityAdminMixin,AdminUserCreationForm):
-    pass
-
-class StudentAdminChangeForm(StudentIdentityAdminMixin,UserChangeForm):
-    pass
