@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Not allowed{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 fw-bold">403</h1>
+    <p class="lead">You are not allowed to do that.</p>
+    <a href="{% url 'home' %}" class="btn btn-primary">Go home</a>
+</div>
+{% endblock %}
