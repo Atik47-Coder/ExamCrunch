@@ -1,7 +1,11 @@
+import os
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+
+from .storage import private_storage
 
 class Course(models.Model):
     code=models.CharField(max_length=20)
@@ -98,3 +102,24 @@ class Confidence(models.Model):
 
     def __str__(self):
         return f'{self.student} - {self.topic.title}: {self.get_level_display()}'
+
+class Resource(models.Model):
+    topic=models.ForeignKey(Topic,on_delete=models.CASCADE,related_name='resources')
+    uploaded_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,
+                                  related_name='resources_uploaded')
+    title=models.CharField(max_length=150)
+    description=models.TextField(blank=True)
+
+    file=models.FileField(upload_to='resources/%Y/%m/',storage=private_storage,blank=True)
+    external_url=models.URLField(blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['-created_at']
+
+    def file_name(self):
+        return os.path.basename(self.file.name) if self.file else ''
+
+    def __str__(self):
+        return self.title
