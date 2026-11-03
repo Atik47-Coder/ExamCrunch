@@ -179,6 +179,21 @@ def topic_detail(request,topic_id):
         'min_ratings':settings.MIN_RATINGS_FOR_DASHBOARD,
     })
 
+@login_required
+def course_dashboard(request,course_id):
+    course,membership=get_course_and_membership(request.user,course_id)
+    rows=course_stats(course)
+
+    visible=[r for r in rows if r['show_counts'] and r['need_help']>0]
+    hardest=max(visible,key=lambda r: (r['need_help_pct'],r['need_help'])) if visible else None
+    return render(request,'courses/dashboard.html',{
+        'hardest':hardest,
+        'course':course,
+        'membership':membership,
+        'rows':rows,
+        'min_ratings':settings.MIN_RATINGS_FOR_DASHBOARD,
+    })
+
 def get_course_and_membership(user,course_id):
     course=get_object_or_404(Course,pk=course_id,is_archived=False)
     membership=Enrollment.objects.filter(
@@ -239,3 +254,8 @@ def topic_stats(topics,active_students):
             row['can_explain_pct']=100 - row['need_help_pct'] - row['practising_pct']
         rows.append(row)
     return rows
+
+def course_stats(course):
+    active_students=Enrollment.objects.filter(course=course,status=Enrollment.ACTIVE).count()
+    topics=Topic.objects.filter(course=course,is_archived=False)
+    return topic_stats(topics,active_students)

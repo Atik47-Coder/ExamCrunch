@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - {{course.code}}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course_detail' course.id %}">{{course.code}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Difficulty dashboard</li>
+    </ol>
+</nav>
+
+<div class="dashboard-hero d-flex flex-wrap align-items-center gap-3 mb-4">
+    <span class="icon-bubble solid lg"><i class="bi bi-bar-chart-line"></i></span>
+    <div class="flex-grow-1">
+        <h1 class="page-title mb-1">Difficulty dashboard</h1>
+        <p class="page-sub mb-0">How confident is the class on each topic? Only counts are shown - nobody can see who rated what.</p>
+    </div>
+    {% if hardest %}
+    <div class="stat-pill" style="max-width:280px;">
+        <div class="small text-body-secondary"><i class="bi bi-fire text-danger"></i> Hardest topic right now</div>
+        <a href="{% url 'topic_detail' hardest.topic.id %}" class="fw-bold text-decoration-none">{{hardest.topic.title}}</a>
+        <div class="small text-body-secondary">{{hardest.need_help}} of {{hardest.rated}} need help</div>
+    </div>
+    {% endif %}
+</div>
+
+{% if rows %}
+<div class="row g-4">
+    {% for row in rows %}
+    <div class="col-lg-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">
+                    <a href="{% url 'topic_detail' row.topic.id %}" class="text-decoration-none">{{row.topic.title}}</a>
+                </h2>
+                {% include 'partials/topic_stats.html' %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="empty-state">
+    <span class="icon-bubble lg"><i class="bi bi-bar-chart"></i></span>
+    <p class="mb-0">There are no topics yet, so there is nothing to show.</p>
+</div></div>
+{% endif %}
+{% endblock %}
