@@ -3,8 +3,9 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login,logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db import IntegrityError,transaction
-from django.db.models import Avg,Count
+from django.db.models import Avg,Count,Q
 from django.shortcuts import render,redirect,resolve_url,get_object_or_404
 from django.utils.http import url_has_allowed_host_and_scheme
 from courses.models import Resource
@@ -95,6 +96,16 @@ def show_profile(request,student):
 @login_required
 def public_profile(request,user_id):
     return show_profile(request,get_object_or_404(User,pk=user_id,is_active=True))
+
+@login_required
+def people(request):
+    query=request.GET.get('q','').strip()[:100]
+    students=User.objects.filter(is_active=True).order_by('first_name','last_name','pk') if query else User.objects.none()
+    for word in query.split():
+        students=students.filter(Q(first_name__icontains=word) | Q(last_name__icontains=word))
+    return render(request,'accounts/people.html',{
+        'q':query,'page_obj':Paginator(students,20).get_page(request.GET.get('page')),
+    })
 
 def get_safe_next_url(request):
     candidate=request.POST.get('next') or request.GET.get('next') or ''

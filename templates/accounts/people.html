@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Find people{% endblock %}
+{% block content %}
+<h1 class="page-title">Find people</h1><p class="text-body-secondary">View profiles, earned badges and feedback from completed help requests.</p>
+<form method="get" class="d-flex gap-2 mb-4"><label for="people-search" class="visually-hidden">Search by name</label><input id="people-search" class="form-control" name="q" value="{{q}}" placeholder="Search by first or last name" required><button class="btn btn-primary">Search</button></form>
+<div class="row g-3">{% for person in page_obj %}<div class="col-md-6 col-lg-4"><a class="card card-body text-decoration-none h-100" href="{% url 'public_profile' person.id %}"><h2 class="h5">{{person.display_name}}</h2><p class="text-body-secondary mb-0">{{person.bio|truncatechars:100|default:'View profile and badges'}}</p></a></div>{% empty %}{% if q %}<p>No people found. Try another name.</p>{% else %}<p>Type a name to search. Profiles appear only after you search.</p>{% endif %}{% endfor %}</div>
+{% if q %}<nav class="d-flex gap-3 mt-4" aria-label="People pages">{% if page_obj.has_previous %}<a href="?q={{q|urlencode}}&page={{page_obj.previous_page_number}}">Previous</a>{% endif %}<span>Page {{page_obj.number}} of {{page_obj.paginator.num_pages}}</span>{% if page_obj.has_next %}<a href="?q={{q|urlencode}}&page={{page_obj.next_page_number}}">Next</a>{% endif %}</nav>{% endif %}
+{% endblock %}
