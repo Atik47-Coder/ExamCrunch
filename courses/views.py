@@ -2,9 +2,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Count,Q
 from django.http import Http404,FileResponse
 from django.shortcuts import render,redirect,get_object_or_404
+from django.utils import timezone
+from helpdesk.models import HelpRequest,HelpInvitation
+from studygroups.models import StudyGroup,GroupMembership,GroupHelperInvitation
 from .form import CourseForm,JoinCourseForm,ConfidenceForm,ResourceForm
 from .models import Course,Enrollment,Topic,Confidence,Resource
 
@@ -127,6 +131,28 @@ def new_invite_code(request,course_id):
         course.save()
         messages.success(request,f'New invite code: {course.invite_code}. The old code no longer works.')
     return redirect('course_detail',course_id=course.id)
+
+@login_required
+@transaction.atomic
+def leave_course(request,course_id):
+    course,membership=get_course_and_membership(request.user,course_id)
+    if request.method!='POST':
+        return redirect('course_detail',course_id=course.id)
+
+    if membership.is_moderator():
+        other_moderators=Enrollment.objects.filter(
+            course=course,role=Enrollment.MODERATOR,status=Enrollment.ACTIVE
+        ).exclude(pk=membership.pk).count()
+        if other_moderators==0:
+            messages.error(request,'You are the only moderator. Make another moderator before leaving.')
+            return redirect('course_detail',course_id=course.id)
+
+    membership.status=Enrollment.LEFT
+    membership.save()
+
+    clean_up_course_membership(request.user,course,GroupMembership.LEFT)
+    messages.info(request,f'You left {course}. Your topic ratings for it were deleted.')
+    return redirect('my_courses')
 
 @login_required
 def add_topic(request,course_id):
@@ -277,6 +303,82 @@ def download_resource(request,resource_id):
         raise Http404('The file is missing.')
 
     return FileResponse(file,as_attachment=True,filename=resource.file_name())
+
+@login_required
+def member_list(request,course_id):
+    course,membership=get_course_as_moderator(request.user,course_id)
+    members=Enrollment.objects.filter(course=course,status=Enrollment.ACTIVE
+                                      ).select_related('student').order_by('-role','student__first_name')
+    return render(request,'courses/member_list.html',{
+        'course':course,
+        'membership':membership,
+        'members':members,
+    })
+
+def count_moderators(course):
+    return Enrollment.objects.filter(course=course,role=Enrollment.MODERATOR,
+                                     status=Enrollment.ACTIVE).count()
+
+@login_required
+def toggle_moderator(request,course_id,enrollment_id):
+    course,membership=get_course_as_moderator(request.user,course_id)
+    target=get_object_or_404(Enrollment,pk=enrollment_id,course=course,status=Enrollment.ACTIVE)
+    if request.method=='POST':
+        if target.is_moderator():
+            if count_moderators(course)<=1:
+                messages.error(request,'A course needs at least one moderator.')
+                return redirect('member_list',course_id=course.id)
+            target.role=Enrollment.MEMBER
+            messages.info(request,f'{target.student.display_name()} is a normal member now.')
+        else:
+            target.role=Enrollment.MODERATOR
+            messages.success(request,f'{target.student.display_name()} is a moderator now.')
+        target.save()
+    return redirect('member_list',course_id=course.id)
+
+@login_required
+@transaction.atomic
+def remove_member(request,course_id,enrollment_id):
+    course,membership=get_course_as_moderator(request.user,course_id)
+    target=get_object_or_404(Enrollment,pk=enrollment_id,course=course,status=Enrollment.ACTIVE)
+    if request.method!='POST':
+        return redirect('member_list',course_id=course.id)
+    if target.student_id==request.user.id:
+        messages.error(request,'You cannot remove yourself. Use "Leave" on the course page.')
+        return redirect('member_list',course_id=course.id)
+    if target.is_moderator():
+        messages.error(request,'Make this person a normal member first, then remove them.')
+        return redirect('member_list',course_id=course.id)
+
+    student=target.student
+    target.status=Enrollment.REMOVED
+    target.save()
+    clean_up_course_membership(student,course,GroupMembership.REMOVED)
+    messages.info(request,f'{student.display_name()} was removed from the course.')
+    return redirect('member_list',course_id=course.id)
+
+def clean_up_course_membership(student,course,group_status):
+    GroupHelperInvitation.objects.filter(group__topic__course=course,helper=student,status__in=['pending','accepted']).update(status='withdrawn')
+    Confidence.objects.filter(student=student,topic__course=course).delete()
+    HelpInvitation.objects.filter(
+        Q(helper=student) | Q(request__requester=student),
+        request__topic__course=course,status=HelpInvitation.PENDING,
+    ).update(status=HelpInvitation.WITHDRAWN,responded_at=timezone.now())
+    HelpRequest.objects.filter(
+        requester=student,topic__course=course,
+        status__in=[HelpRequest.OPEN,HelpRequest.IN_PROGRESS],
+    ).update(status=HelpRequest.CANCELLED,assigned_helper=None,assigned_at=None)
+    HelpRequest.objects.filter(
+        assigned_helper=student,topic__course=course,status=HelpRequest.IN_PROGRESS,
+    ).update(status=HelpRequest.OPEN,assigned_helper=None,assigned_at=None)
+    GroupMembership.objects.filter(
+        student=student,group__topic__course=course,status=GroupMembership.JOINED,
+    ).update(status=group_status)
+    for group in StudyGroup.objects.filter(topic__course=course,status=StudyGroup.OPEN):
+        if not group.joined_memberships().exists():
+            group.status=StudyGroup.CLOSED
+            group.save()
+            GroupHelperInvitation.objects.filter(group=group,status='pending').update(status='withdrawn')
 
 def get_course_and_membership(user,course_id):
     course=get_object_or_404(Course,pk=course_id,is_archived=False)

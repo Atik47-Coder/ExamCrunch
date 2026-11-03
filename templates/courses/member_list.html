@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Members - {{course.code}}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course_detail' course.id %}">{{course.code}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Members</li>
+    </ol>
+</nav>
+
+<div class="d-flex gap-3 align-items-center mb-4">
+    <span class="icon-bubble solid lg"><i class="bi bi-people"></i></span>
+    <div>
+        <h1 class="page-title mb-0">Course members</h1>
+        <p class="page-sub mb-0">{{members|length}} active member{{members|length|pluralize}}. Only moderators can see this page. Topic ratings stay private.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="list-group list-group-flush">
+        {% for m in members %}
+        <div class="list-group-item d-flex flex-wrap align-items-center gap-3">
+            {% if m.student.profile_image %}
+                <img src="{{m.student.profile_image.url}}" class="avatar-sm" style="width:40px;height:40px;" alt="">
+            {% else %}
+                <span class="avatar-sm" style="width:40px;height:40px;font-size:1rem;">{{m.student.first_name|default:m.student.username|slice:":1"|upper}}</span>
+            {% endif %}
+            <div class="flex-grow-1">
+                <div class="fw-semibold"><a href="{% url 'public_profile' m.student_id %}">{{m.student.display_name}}</a>
+                    {% if m.is_moderator %}<span class="badge text-bg-info ms-1"><i class="bi bi-shield-check"></i> Moderator</span>{% endif %}
+                    {% if m.student_id == user.id %}<span class="badge text-bg-secondary ms-1">You</span>{% endif %}
+                </div>
+                <div class="small text-body-secondary">ID {{m.student.student_id}} &middot; joined {{m.joined_at|timesince}} ago</div>
+            </div>
+            {% if m.student_id != user.id %}
+            <div class="d-flex gap-2">
+                <form method="post" action="{% url 'toggle_moderator' course.id m.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        {% if m.is_moderator %}<i class="bi bi-person-dash"></i> Make member{% else %}<i class="bi bi-shield-plus"></i> Make moderator{% endif %}
+                    </button>
+                </form>
+                {% if not m.is_moderator %}
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#removeModal{{m.id}}"><i class="bi bi-person-x"></i> Remove</button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if not m.is_moderator and m.student_id != user.id %}
+        <div class="modal fade" id="removeModal{{m.id}}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header"><h2 class="modal-title h5">Remove <a href="{% url 'public_profile' m.student_id %}">{{m.student.display_name}}</a>?</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body">Their topic ratings in this course are deleted, waiting invitations are withdrawn, and
+                        they cannot join again with the invite code.</div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <form method="post" action="{% url 'remove_member' course.id m.id %}">{% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Remove</button></form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
