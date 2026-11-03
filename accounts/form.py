@@ -150,7 +150,7 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model=User
         fields=['first_name','last_name','bio','profile_image']
-        widgets={'bio':forms.Textarea(attrs={'rows':4})}
+       
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
