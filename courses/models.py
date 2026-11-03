@@ -16,6 +16,7 @@ class Course(models.Model):
     invite_code=models.CharField(max_length=12,unique=True,blank=True)
     created_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,
                                  related_name='courses_created')
+    exam_date=models.DateField(null=True,blank=True)
     is_archived=models.BooleanField(default=False)
     created_at=models.DateTimeField(auto_now_add=True)
 
@@ -30,6 +31,11 @@ class Course(models.Model):
             if not Course.objects.filter(invite_code=code).exists():
                 self.invite_code=code
                 return code
+
+    def days_until_exam(self):
+        if self.exam_date is None:
+            return None
+        return (self.exam_date - timezone.localdate()).days
 
     def save(self,*args,**kwargs):
         if not self.invite_code:
