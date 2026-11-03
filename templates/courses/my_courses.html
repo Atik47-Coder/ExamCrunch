@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}My courses{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+        <span class="eyebrow mb-2"><i class="bi bi-journal-bookmark"></i> Your classes</span>
+        <h1 class="page-title mb-0">Hello, {{user.first_name|default:user.username}}</h1>
+        <p class="page-sub mb-0">Pick a course to rate topics, find helpers or share notes.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'join_course' %}" class="btn btn-primary"><i class="bi bi-key"></i> Join with invite code</a>
+    </div>
+</div>
+
+{% if memberships %}
+<div class="row g-4">
+    {% for m in memberships %}
+    <div class="col-md-6 col-lg-4 fade-up {% cycle '' 'd1' 'd2' %}">
+        <a href="{% url 'course_detail' m.course.id %}" class="text-decoration-none">
+            <div class="card h-100 card-hover">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="icon-bubble solid"><i class="bi bi-mortarboard"></i></span>
+                        {% if m.is_moderator %}
+                            <span class="badge text-bg-info"><i class="bi bi-shield-check"></i> Moderator</span>
+                        {% endif %}
+                    </div>
+                    <div class="small fw-bold gradient-text mb-1">{{m.course.code}}</div>
+                    <h2 class="h5 text-body mb-2">{{m.course.title}}</h2>
+                    <p class="text-body-secondary small mb-3">
+                        {{m.course.semester}}{% if m.course.section %} &middot; Section {{m.course.section}}{% endif %}
+                    </p>
+                    {% with days=m.course.days_until_exam %}
+                        {% if days is not None and days >= 0 %}
+                            <span class="badge {% if days <= 7 %}text-bg-danger{% else %}text-bg-light border{% endif %}"><i class="bi bi-calendar-event"></i>
+                                {% if days == 0 %}Exam today{% elif days == 1 %}Exam tomorrow{% else %}Exam in {{days}} days{% endif %}</span>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <span class="icon-bubble lg solid"><i class="bi bi-journal-plus"></i></span>
+        <h2 class="h4">You are not in any course yet</h2>
+        <p class="text-body-secondary">Ask your teacher or a classmate for the course invite code.</p>
+        <a href="{% url 'join_course' %}" class="btn btn-primary">Join with invite code</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
