@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{{student.display_name}}{% endblock %}
+
+{% block content %}
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-5">
+        <div class="card profile-card text-center">
+            <div class="profile-cover"></div>
+            <div class="card-body px-4 pb-4">
+                {% if student.profile_image %}
+                    <img src="{{student.profile_image.url}}" alt="Your profile photo" class="avatar mb-3">
+                {% else %}
+                    <div class="avatar-placeholder mx-auto mb-3">{{student.first_name|default:student.username|slice:":1"|upper}}</div>
+                {% endif %}
+
+                <h1 class="h4 mb-0">{{student.display_name}}</h1>
+                {% if own_profile %}<p class="text-body-secondary mb-3">{% if student.student_id %}ID {{student.student_id}}{% else %}Administrator{% endif %}</p>
+                <p class="mb-1 small"><i class="bi bi-envelope"></i> {{student.email}}</p>{% endif %}
+
+                <div class="text-start mt-3">
+                    <div class="small fw-bold text-body-secondary text-uppercase mb-1">Bio</div>
+                    <p class="mb-0">{{student.bio|default:"No bio yet."|linebreaksbr}}</p>
+                </div>
+
+                <div class="row g-2 text-center my-4">
+                    <div class="col-6"><div class="stat-pill"><div class="num gradient-text">{{helped_count}}</div><div class="small text-body-secondary mt-1">classmates helped</div></div></div>
+                    <div class="col-6"><div class="stat-pill"><div class="num gradient-text">{% if average_rating %}{{average_rating}}<small class="fs-6">/5</small>{% else %}-{% endif %}</div><div class="small text-body-secondary mt-1">average feedback ({{rating_count}} ratings)</div></div></div>
+                </div>
+
+                <p class="small text-body-secondary">{{resolved_count}} resolved help requests. Counts and ratings are based on completed individual help requests.</p>
+                {% if own_profile %}<a href="{% url 'edit_profile' %}" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Edit profile</a>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-1"><i class="bi bi-award text-primary"></i> Badges</h2>
+                <p class="text-body-secondary small mb-3">Earn badges by helping classmates and sharing what you know. Earned badges are visible to other signed-in members.</p>
+                <div class="row g-3">
+                    {% for b in badges %}
+                    <div class="col-sm-6">
+                        <div class="badge-tile {% if not b.earned %}locked{% endif %}">
+                            <span class="icon-bubble {% if b.earned %}solid{% endif %}"><i class="bi {{b.icon}}"></i></span>
+                            <div>
+                                <div class="fw-semibold">{{b.name}}</div>
+                                <div class="small text-body-secondary">{{b.how}}</div>
+                                {% if not b.earned %}<span class="small"><i class="bi bi-lock"></i> Locked</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}<p class="text-body-secondary">No badges earned yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

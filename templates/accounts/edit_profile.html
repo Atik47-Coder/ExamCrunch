@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit profile{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 form-card">
+    <div class="card-body p-4">
+        <h1 class="h3 mb-3">Edit profile</h1>
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {% include 'partials/form.html' %}
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+            <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
