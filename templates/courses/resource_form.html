@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course_detail' course.id %}">{{course.code}}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'topic_detail' topic.id %}">{{topic.title}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{title}}</li>
+    </ol>
+</nav>
+
+<div class="card shadow-sm border-0 form-card">
+    <div class="card-body p-4">
+        <h1 class="h3 mb-1">{{title}}</h1>
+        <p class="text-body-secondary">Only members of this course can open what you share.</p>
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {% if resource and resource.file %}
+                <div class="alert alert-light border small"><i class="bi bi-paperclip"></i> Current file: <strong>{{resource.file_name}}</strong>. Choose a new file below to replace it.</div>
+            {% endif %}
+            {% include 'partials/form.html' %}
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save</button>
+            <a href="{% url 'topic_detail' topic.id %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

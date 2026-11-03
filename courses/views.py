@@ -3,9 +3,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count,Q
-from django.http import Http404
+from django.http import Http404,FileResponse
 from django.shortcuts import render,redirect,get_object_or_404
-from .form import CourseForm,JoinCourseForm,ConfidenceForm
+from .form import CourseForm,JoinCourseForm,ConfidenceForm,ResourceForm
 from .models import Course,Enrollment,Topic,Confidence,Resource
 
 @login_required
@@ -194,6 +194,90 @@ def course_dashboard(request,course_id):
         'min_ratings':settings.MIN_RATINGS_FOR_DASHBOARD,
     })
 
+@login_required
+def resource_list(request,course_id):
+    course,membership=get_course_and_membership(request.user,course_id)
+    topics=Topic.objects.filter(course=course,is_archived=False)
+    groups=[]
+    for topic in topics:
+        rows=[{'resource':r,'can_manage':can_manage_resource(request.user,r,membership)}
+              for r in Resource.objects.filter(topic=topic).select_related('uploaded_by')]
+        groups.append({'topic':topic,'rows':rows})
+    return render(request,'courses/resource_list.html',{
+        'course':course,
+        'membership':membership,
+        'groups':groups,
+    })
+
+@login_required
+def add_resource(request,topic_id):
+    topic,course,membership=get_topic_and_membership(request.user,topic_id)
+    if topic.is_archived:
+        raise Http404('Topic not found')
+
+    if request.method=='POST':
+        form=ResourceForm(request.POST,request.FILES)
+        if form.is_valid():
+            resource=form.save(commit=False)
+            resource.topic=topic
+            resource.uploaded_by=request.user
+            resource.save()
+            messages.success(request,'Resource shared with your classmates.')
+            return redirect('topic_detail',topic_id=topic.id)
+    else:
+        form=ResourceForm()
+    return render(request,'courses/resource_form.html',{
+        'form':form,'topic':topic,'course':course,'title':'Share a resource',
+    })
+
+@login_required
+def edit_resource(request,resource_id):
+    resource,course,membership=get_resource_and_membership(request.user,resource_id)
+    if not can_manage_resource(request.user,resource,membership):
+        raise PermissionDenied('Only the uploader or a moderator can edit this resource.')
+
+    old_file_name=resource.file.name
+    if request.method=='POST':
+        form=ResourceForm(request.POST,request.FILES,instance=resource)
+        if form.is_valid():
+            resource=form.save()
+
+            if old_file_name and resource.file.name!=old_file_name:
+                resource.file.storage.delete(old_file_name)
+            messages.success(request,'Resource updated.')
+            return redirect('topic_detail',topic_id=resource.topic_id)
+    else:
+        form=ResourceForm(instance=resource)
+    return render(request,'courses/resource_form.html',{
+        'form':form,'topic':resource.topic,'course':course,
+        'title':'Edit resource','resource':resource,
+    })
+
+@login_required
+def delete_resource(request,resource_id):
+    resource,course,membership=get_resource_and_membership(request.user,resource_id)
+    if not can_manage_resource(request.user,resource,membership):
+        raise PermissionDenied('Only the uploader or a moderator can delete this resource.')
+    topic_id=resource.topic_id
+    if request.method=='POST':
+        if resource.file:
+            resource.file.delete(save=False)
+        resource.delete()
+        messages.info(request,'Resource deleted.')
+    return redirect('topic_detail',topic_id=topic_id)
+
+@login_required
+def download_resource(request,resource_id):
+    resource,course,membership=get_resource_and_membership(request.user,resource_id)
+    if not resource.file:
+        raise Http404('This resource has no file.')
+    try:
+        file=resource.file.open('rb')
+    except FileNotFoundError:
+        raise Http404('The file is missing.')
+
+    return FileResponse(file,as_attachment=True,filename=resource.file_name())
+
 def get_course_and_membership(user,course_id):
     course=get_object_or_404(Course,pk=course_id,is_archived=False)
     membership=Enrollment.objects.filter(
@@ -218,6 +302,12 @@ def get_topic_as_moderator(user,topic_id):
     if not membership.is_moderator():
         raise PermissionDenied('Only moderators can do this.')
     return topic,course,membership
+
+def get_resource_and_membership(user,resource_id):
+    resource=get_object_or_404(Resource.objects.select_related('topic__course','uploaded_by'),
+                               pk=resource_id)
+    course,membership=get_course_and_membership(user,resource.topic.course_id)
+    return resource,course,membership
 
 def can_manage_resource(user,resource,membership):
     return resource.uploaded_by_id==user.id or membership.is_moderator()

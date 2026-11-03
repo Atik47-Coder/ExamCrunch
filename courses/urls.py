@@ -13,4 +13,9 @@ urlpatterns=[
     path('topics/<int:topic_id>/',views.topic_detail,name='topic_detail'),
     path('topics/<int:topic_id>/edit/',views.edit_topic,name='edit_topic'),
     path('topics/<int:topic_id>/archive/',views.toggle_topic,name='toggle_topic'),
+    path('<int:course_id>/resources/',views.resource_list,name='resource_list'),
+    path('topics/<int:topic_id>/resources/add/',views.add_resource,name='add_resource'),
+    path('resources/<int:resource_id>/edit/',views.edit_resource,name='edit_resource'),
+    path('resources/<int:resource_id>/delete/',views.delete_resource,name='delete_resource'),
+    path('resources/<int:resource_id>/download/',views.download_resource,name='download_resource'),
 ]

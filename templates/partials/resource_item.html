@@ -1,0 +1,31 @@
+
+<div class="list-group-item">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+        <div>
+            <div class="fw-semibold">
+                {% if row.resource.file %}<i class="bi bi-file-earmark-text text-primary"></i>{% else %}<i class="bi bi-link-45deg text-primary"></i>{% endif %}
+                {{row.resource.title}}
+            </div>
+            {% if row.resource.description %}<div class="small text-body-secondary">{{row.resource.description}}</div>{% endif %}
+            <div class="small text-body-secondary">
+                Shared by {{row.resource.uploaded_by.display_name}} &middot; {{row.resource.created_at|timesince}} ago
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-1 align-items-center">
+            {% if row.resource.file %}
+                <a href="{% url 'download_resource' row.resource.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i> Download</a>
+            {% endif %}
+            {% if row.resource.external_url %}
+                <a href="{{row.resource.external_url}}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> Open link</a>
+            {% endif %}
+            {% if row.can_manage %}
+                <a href="{% url 'edit_resource' row.resource.id %}" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="{% url 'delete_resource' row.resource.id %}" class="d-inline"
+                      onsubmit="return confirm('Delete this resource?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
