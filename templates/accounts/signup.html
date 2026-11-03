@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign up{% endblock %}
+
+{% block content %}
+<div class="auth-wrap card border-0 overflow-hidden">
+    <div class="row g-0">
+        <div class="col-md-5 auth-side">
+            <span class="brand-mark mb-3" style="background:rgba(255,255,255,.2);"><i class="bi bi-rocket-takeoff"></i></span>
+            <h2 class="h3 text-white">Join your class</h2>
+            <ul class="list-unstyled mb-0 mt-2 d-grid gap-2" style="opacity:.95;">
+                <li><i class="bi bi-check2-circle me-2"></i>Private confidence ratings</li>
+                <li><i class="bi bi-check2-circle me-2"></i>Matched with willing helpers</li>
+                <li><i class="bi bi-check2-circle me-2"></i>Ask anonymously</li>
+            </ul>
+        </div>
+        <div class="col-md-7 auth-form">
+            <h1 class="h4 mb-1">Create your account</h1>
+            <p class="text-body-secondary small mb-4">Use your real name, student ID and UAP student email so classmates can trust you.</p>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% include 'partials/form.html' %}
+                <button type="submit" class="btn btn-primary w-100 mt-2"><i class="bi bi-person-plus"></i> Sign up</button>
+            </form>
+            <p class="text-center mt-4 mb-0 small">Already have an account? <a href="{% url 'login' %}" class="fw-semibold">Log in</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

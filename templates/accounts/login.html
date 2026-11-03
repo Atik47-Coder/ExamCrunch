@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="auth-wrap card border-0 overflow-hidden">
+    <div class="row g-0">
+        <div class="col-md-5 auth-side">
+            <span class="brand-mark mb-3" style="background:rgba(255,255,255,.2);"><i class="bi bi-lightning-charge-fill"></i></span>
+            <h2 class="h3 text-white">Welcome back</h2>
+            <p class="mb-0" style="opacity:.9;">Pick up where you left off. Your classmates and your topics are waiting.</p>
+        </div>
+        <div class="col-md-7 auth-form">
+            <h1 class="h4 mb-1">Log in to ExamCrunch</h1>
+            <p class="text-body-secondary small mb-4">Use the email and password you signed up with.</p>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if next_url %}<input type="hidden" name="next" value="{{next_url}}">{% endif %}
+                {% include 'partials/form.html' %}
+                <button type="submit" class="btn btn-primary w-100 mt-2"><i class="bi bi-box-arrow-in-right"></i> Log in</button>
+            </form>
+            <p class="text-center mt-4 mb-0 small">New here? <a href="{% url 'signup' %}" class="fw-semibold">Create an account</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
