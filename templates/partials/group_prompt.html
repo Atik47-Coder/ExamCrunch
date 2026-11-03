@@ -1,0 +1,32 @@
+
+<div class="card border-0 shadow-sm border-start border-4 border-info mb-3">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <div class="fw-semibold"><i class="bi bi-people-fill text-info"></i> Study group for {{prompt.topic.title}}</div>
+                <div class="small text-body-secondary">
+                    {{prompt.need_count}} classmates (including you) need help with this topic.
+                    {% if prompt.group %}{{prompt.joined_count}} already joined a study group.{% else %}Start a study group?{% endif %}
+                    <span class="d-block"><i class="bi bi-shield-lock"></i> You only see numbers. Names are shown after someone joins.</span>
+                </div>
+            </div>
+            <div>
+                {% if prompt.is_member %}
+                    <a href="{% url 'group_detail' prompt.group.id %}" class="btn btn-info btn-sm"><i class="bi bi-door-open"></i> Open my group</a>
+                {% elif prompt.can_start %}
+                    <form method="post" action="{% url 'start_group' prompt.topic.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-info btn-sm"><i class="bi bi-plus-circle"></i> Start a study group</button>
+                    </form>
+                {% elif prompt.can_join %}
+                    <form method="post" action="{% url 'join_group' prompt.group.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-info btn-sm"><i class="bi bi-box-arrow-in-right"></i> Join the group</button>
+                    </form>
+                {% else %}
+                    <span class="badge text-bg-secondary">Group is full</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,11 @@
+
+
+{% if level == 1 %}
+    <span class="badge text-bg-danger"><i class="bi bi-life-preserver"></i> Need help</span>
+{% elif level == 2 %}
+    <span class="badge text-bg-warning"><i class="bi bi-pencil"></i> Practising</span>
+{% elif level == 3 %}
+    <span class="badge text-bg-success"><i class="bi bi-lightbulb"></i> Can explain</span>
+{% else %}
+    <span class="badge text-bg-secondary">Not rated</span>
+{% endif %}
