@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+
+<section class="hero-landing mb-5">
+    <div class="row align-items-center g-5 position-relative" style="z-index:1;">
+        <div class="col-lg-7">
+            <span class="eyebrow mb-3"><i class="bi bi-stars"></i> Peer study help for your class</span>
+            <h1 class="hero-title mb-3">The classmate who just mastered your hardest topic is one click away.</h1>
+            <p class="lead mb-4" style="max-width: 560px;">
+                ExamCrunch shows where your whole class is stuck, then matches you with a classmate who can
+                explain it. Ask openly, or anonymously.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                {% if user.is_authenticated %}
+                    <a class="btn btn-light btn-lg" href="{% url 'my_courses' %}"><i class="bi bi-journal-bookmark"></i> Go to my courses</a>
+                {% else %}
+                    <a class="btn btn-light btn-lg" href="{% url 'signup' %}">Get started free <i class="bi bi-arrow-right"></i></a>
+                    <a class="btn btn-outline-light btn-lg" href="{% url 'login' %}">I have an account</a>
+                {% endif %}
+            </div>
+        </div>
+
+        
+        <div class="col-lg-5 d-none d-md-block">
+            <div class="position-relative px-3 py-4">
+                <div class="mock-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Difficulty dashboard</strong>
+                        <span class="badge text-bg-primary">CSE 2101</span>
+                    </div>
+                    <div class="mock-row">
+                        <div class="flex-grow-1"><div class="small fw-semibold mb-1">Exception Handling</div>
+                            <div class="mock-bar"><span style="width:55%;background:#ef4444"></span><span style="width:25%;background:#f59e0b"></span><span style="width:20%;background:#10b981"></span></div></div>
+                    </div>
+                    <div class="mock-row">
+                        <div class="flex-grow-1"><div class="small fw-semibold mb-1">Polymorphism</div>
+                            <div class="mock-bar"><span style="width:20%;background:#ef4444"></span><span style="width:30%;background:#f59e0b"></span><span style="width:50%;background:#10b981"></span></div></div>
+                    </div>
+                    <div class="mock-row">
+                        <div class="flex-grow-1"><div class="small fw-semibold mb-1">Abstraction</div>
+                            <div class="mock-bar"><span style="width:35%;background:#ef4444"></span><span style="width:45%;background:#f59e0b"></span><span style="width:20%;background:#10b981"></span></div></div>
+                    </div>
+                </div>
+                <div class="mock-float" style="top:-6px; right:-4px;"><i class="bi bi-incognito text-primary"></i> Asked anonymously</div>
+                <div class="mock-float" style="bottom:-6px; left:-6px; animation-delay:1.3s;"><i class="bi bi-people-fill text-success"></i> 3 classmates can help</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="stat-strip mb-5">
+    <div class="row g-3">
+        <div class="col-6 col-lg-3"><div class="stat-pill"><div class="num gradient-text">3</div><div class="small text-body-secondary mt-1">confidence levels</div></div></div>
+        <div class="col-6 col-lg-3"><div class="stat-pill"><div class="num gradient-text">100%</div><div class="small text-body-secondary mt-1">private ratings</div></div></div>
+        <div class="col-6 col-lg-3"><div class="stat-pill"><div class="num gradient-text">48h</div><div class="small text-body-secondary mt-1">invitations stay fresh</div></div></div>
+        <div class="col-6 col-lg-3"><div class="stat-pill"><div class="num gradient-text">0</div><div class="small text-body-secondary mt-1">names shown to the class</div></div></div>
+    </div>
+</section>
+
+<section class="mb-5">
+    <div class="text-center mb-4">
+        <span class="eyebrow mb-2">How it works</span>
+        <h2 class="page-title">From "I am stuck" to "I got it" in three steps</h2>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4 fade-up">
+            <div class="card feature-card h-100 card-hover">
+                <span class="step-number">1</span>
+                <h3>Join your course</h3>
+                <p class="text-body-secondary mb-0">Enter the invite code from your teacher, a classmate or a moderator. Courses are created by administrators.</p>
+            </div>
+        </div>
+        <div class="col-md-4 fade-up d1">
+            <div class="card feature-card h-100 card-hover">
+                <span class="step-number">2</span>
+                <h3>Rate your confidence</h3>
+                <p class="text-body-secondary mb-0">Mark each topic <em>Need help</em>, <em>Practising</em> or <em>Can explain</em>. Only you can see your own rating.</p>
+            </div>
+        </div>
+        <div class="col-md-4 fade-up d2">
+            <div class="card feature-card h-100 card-hover">
+                <span class="step-number">3</span>
+                <h3>Get matched</h3>
+                <p class="text-body-secondary mb-0">Invite a willing classmate who can explain the topic. The first one to accept helps you.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="mb-5">
+    <div class="text-center mb-4">
+        <span class="eyebrow mb-2">Everything for exam week</span>
+        <h2 class="page-title">Built so a whole class can revise together</h2>
+    </div>
+    <div class="row g-4">
+        {% for icon, colour, title, text in features %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card feature-card h-100 card-hover">
+                <span class="icon-bubble {{colour}}"><i class="bi {{icon}}"></i></span>
+                <h3>{{title}}</h3>
+                <p class="text-body-secondary mb-0">{{text}}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="mb-5">
+    <div class="privacy-panel">
+        <div class="row align-items-center g-4 position-relative" style="z-index:1;">
+            <div class="col-lg-6">
+                <span class="eyebrow mb-3" style="background:rgba(255,255,255,.12);color:#fff;"><i class="bi bi-shield-lock"></i> Privacy first</span>
+                <h2 class="h2 text-white">Asking for help should never feel embarrassing.</h2>
+                <p class="mb-0" style="opacity:.8;">Nobody sees who needs help. We built the rules into the code, not just the screen.</p>
+            </div>
+            <div class="col-lg-6">
+                <ul class="list-unstyled mb-0 d-grid gap-3">
+                    <li><i class="bi bi-check-circle-fill check me-2"></i> Ratings are private. The class sees only counts.</li>
+                    <li><i class="bi bi-check-circle-fill check me-2"></i> Counts stay hidden until 3 classmates have rated a topic.</li>
+                    <li><i class="bi bi-check-circle-fill check me-2"></i> Ask anonymously. Classmates and your helper see "Anonymous student".</li>
+                    <li><i class="bi bi-check-circle-fill check me-2"></i> Study groups are opt-in. You join only when you press Join.</li>
+                    <li><i class="bi bi-check-circle-fill check me-2"></i> Shared files can be downloaded by course members only.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if not user.is_authenticated %}
+<section class="cta-panel">
+    <h2 class="page-title mb-2">Ready to crunch smarter?</h2>
+    <p class="text-body-secondary mb-4">Create your account in a minute and join your class.</p>
+    <a class="btn btn-primary btn-lg" href="{% url 'signup' %}">Create my account <i class="bi bi-arrow-right"></i></a>
+</section>
+{% endif %}
+{% endblock %}
