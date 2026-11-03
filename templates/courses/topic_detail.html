@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}{{topic.title}}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'course_detail' course.id %}">{{course.code}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{topic.title}}</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div class="d-flex gap-3 align-items-start">
+        <span class="icon-bubble solid lg"><i class="bi bi-bookmark-star"></i></span>
+        <div>
+            <h1 class="page-title mb-1">{{topic.title}}</h1>
+            {% if topic.is_archived %}<span class="badge text-bg-secondary">Archived</span>{% endif %}
+            {% if topic.description %}<p class="page-sub mb-0">{{topic.description}}</p>{% endif %}
+        </div>
+    </div>
+    
+</div>
+
+{% if group_prompt %}{% with prompt=group_prompt %}{% include 'partials/group_prompt.html' %}{% endwith %}{% endif %}
+
+<div class="row g-4">
+    
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-1">How confident are you?</h2>
+                <p class="text-body-secondary small">
+                    <i class="bi bi-lock"></i> Private. Classmates only see class-wide counts, never your name.
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{form.non_field_errors}}</div>{% endif %}
+
+                    <div class="row g-2 level-choice mb-3">
+                        {% for radio in form.level %}
+                        <div class="col-4">
+                            {{radio.tag}}
+                            {% if forloop.counter == 1 %}
+                                <label class="level-card need" for="{{radio.id_for_label}}"><i class="bi bi-life-preserver"></i> {{radio.choice_label}}<small>I am stuck</small></label>
+                            {% elif forloop.counter == 2 %}
+                                <label class="level-card practising" for="{{radio.id_for_label}}"><i class="bi bi-pencil-square"></i> {{radio.choice_label}}<small>Getting there</small></label>
+                            {% else %}
+                                <label class="level-card explain" for="{{radio.id_for_label}}"><i class="bi bi-lightbulb"></i> {{radio.choice_label}}<small>I could teach it</small></label>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.level.errors %}<div class="text-danger small mb-2">{{error}}</div>{% endfor %}
+
+                    
+                    <div class="willing-box form-check form-switch mb-3 ps-5" id="willingBox">
+                        {{form.willing_to_help}}
+                        <label class="form-check-label fw-semibold" for="{{form.willing_to_help.id_for_label}}">{{form.willing_to_help.label}}</label>
+                        <div class="form-text" id="willingHint">Turn this on to be suggested as a helper.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> {% if my_rating %}Update my rating{% else %}Save my rating{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Class snapshot</h2>
+                {% with row=snapshot %}
+                    {% include 'partials/topic_stats.html' %}
+                {% endwith %}
+                <a href="{% url 'course_dashboard' course.id %}" class="btn btn-sm btn-outline-primary mt-3">
+                    <i class="bi bi-bar-chart-line"></i> Full dashboard
+                </a>
+
+                <hr>
+                <h3 class="h6">Stuck on this topic?</h3>
+                {% if my_rating %}
+                    <a href="{% url 'new_request' topic.id %}" class="btn btn-primary btn-sm"><i class="bi bi-life-preserver"></i> Ask for help</a>
+                {% else %}
+                    <p class="small text-body-secondary mb-0">Save your rating on the left first, then you can ask for help.</p>
+                {% endif %}
+                <a href="{% url 'request_list' course.id %}" class="btn btn-link btn-sm">All help requests</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-body d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0"><i class="bi bi-collection"></i> Resources</h2>
+        <a href="{% url 'add_resource' topic.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Share a note or link</a>
+    </div>
+    {% if resource_rows %}
+    <div class="list-group list-group-flush">
+        {% for row in resource_rows %}{% include 'partials/resource_item.html' %}{% endfor %}
+    </div>
+    {% else %}
+    <div class="card-body text-body-secondary small">Nothing shared yet. Be the first to share your notes!</div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+    const levelRadios = document.querySelectorAll('input[name="level"]');
+    const willingSwitch = document.getElementById('{{form.willing_to_help.id_for_label}}');
+    const willingBox = document.getElementById('willingBox');
+    const willingHint = document.getElementById('willingHint');
+
+    function syncWillingSwitch() {
+        const chosen = document.querySelector('input[name="level"]:checked');
+        const canExplain = chosen && chosen.value === '3';
+        willingSwitch.disabled = !canExplain;
+        if (!canExplain) { willingSwitch.checked = false; }
+        willingBox.classList.toggle('disabled', !canExplain);
+        willingHint.textContent = canExplain
+            ? 'Turn this on to be suggested as a helper.'
+            : 'Only available when you choose "Can explain".';
+    }
+    levelRadios.forEach(function (radio) { radio.addEventListener('change', syncWillingSwitch); });
+    syncWillingSwitch();
+</script>
+{% endblock %}

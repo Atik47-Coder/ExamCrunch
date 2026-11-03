@@ -1,10 +1,12 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Count,Q
 from django.http import Http404
 from django.shortcuts import render,redirect,get_object_or_404
-from .form import CourseForm,JoinCourseForm
-from .models import Course,Enrollment,Topic,Confidence
+from .form import CourseForm,JoinCourseForm,ConfidenceForm
+from .models import Course,Enrollment,Topic,Confidence,Resource
 
 @login_required
 def my_courses(request):
@@ -126,6 +128,57 @@ def new_invite_code(request,course_id):
         messages.success(request,f'New invite code: {course.invite_code}. The old code no longer works.')
     return redirect('course_detail',course_id=course.id)
 
+@login_required
+def add_topic(request,course_id):
+    raise PermissionDenied('Topics can only be managed in Django admin.')
+
+@login_required
+def edit_topic(request,topic_id):
+    raise PermissionDenied('Topics can only be managed in Django admin.')
+
+@login_required
+def toggle_topic(request,topic_id):
+    raise PermissionDenied('Topics can only be managed in Django admin.')
+
+@login_required
+def topic_detail(request,topic_id):
+    from studygroups.views import group_prompt
+    topic,course,membership=get_topic_and_membership(request.user,topic_id)
+    if topic.is_archived and not membership.is_moderator():
+        raise Http404('Topic not found')
+
+    my_rating=Confidence.objects.filter(student=request.user,topic=topic).first()
+
+    if request.method=='POST':
+        form=ConfidenceForm(request.POST,instance=my_rating)
+        if form.is_valid():
+            rating=form.save(commit=False)
+            rating.student=request.user
+            rating.topic=topic
+            rating.save()
+            messages.success(request,'Your confidence was saved. Only you can see it.')
+            return redirect('topic_detail',topic_id=topic.id)
+    else:
+        form=ConfidenceForm(instance=my_rating)
+
+    active_students=Enrollment.objects.filter(course=course,status=Enrollment.ACTIVE).count()
+    snapshot=topic_stats(Topic.objects.filter(pk=topic.pk),active_students)[0]
+
+    resource_rows=[{'resource':r,'can_manage':can_manage_resource(request.user,r,membership)}
+                   for r in Resource.objects.filter(topic=topic).select_related('uploaded_by')]
+
+    return render(request,'courses/topic_detail.html',{
+        'topic':topic,
+        'course':course,
+        'membership':membership,
+        'form':form,
+        'my_rating':my_rating,
+        'snapshot':snapshot,
+        'resource_rows':resource_rows,
+        'group_prompt':group_prompt(request.user,topic),
+        'min_ratings':settings.MIN_RATINGS_FOR_DASHBOARD,
+    })
+
 def get_course_and_membership(user,course_id):
     course=get_object_or_404(Course,pk=course_id,is_archived=False)
     membership=Enrollment.objects.filter(
@@ -139,3 +192,50 @@ def get_course_as_moderator(user,course_id):
     if not membership.is_moderator():
         raise PermissionDenied('Only moderators can do this.')
     return course,membership
+
+def get_topic_and_membership(user,topic_id):
+    topic=get_object_or_404(Topic,pk=topic_id)
+    course,membership=get_course_and_membership(user,topic.course_id)
+    return topic,course,membership
+
+def get_topic_as_moderator(user,topic_id):
+    topic,course,membership=get_topic_and_membership(user,topic_id)
+    if not membership.is_moderator():
+        raise PermissionDenied('Only moderators can do this.')
+    return topic,course,membership
+
+def can_manage_resource(user,resource,membership):
+    return resource.uploaded_by_id==user.id or membership.is_moderator()
+
+def topic_stats(topics,active_students):
+    topics=topics.annotate(
+        rated=Count('confidences'),
+        need_help=Count('confidences',filter=Q(confidences__level=Confidence.NEED_HELP)),
+        practising=Count('confidences',filter=Q(confidences__level=Confidence.PRACTISING)),
+        can_explain=Count('confidences',filter=Q(confidences__level=Confidence.CAN_EXPLAIN)),
+        willing=Count('confidences',filter=Q(confidences__willing_to_help=True)),
+    )
+
+    rows=[]
+    for t in topics:
+        show=t.rated>=settings.MIN_RATINGS_FOR_DASHBOARD
+        row={
+            'topic':t,
+            'rated':t.rated,
+            'students':active_students,
+            'show_counts':show,
+            'participation':round(t.rated * 100 / active_students) if active_students else 0,
+        }
+        if show:
+            row.update({
+                'need_help':t.need_help,
+                'practising':t.practising,
+                'can_explain':t.can_explain,
+                'willing':t.willing,
+                'need_help_pct':round(t.need_help * 100 / t.rated),
+                'practising_pct':round(t.practising * 100 / t.rated),
+            })
+
+            row['can_explain_pct']=100 - row['need_help_pct'] - row['practising_pct']
+        rows.append(row)
+    return rows
